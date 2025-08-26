@@ -1,0 +1,5 @@
+{
+  "name": "AI Security Surveyor",
+  "description": "Enter a description of a property to get an AI-generated aerial view and a detailed security analysis with recommended camera placements for optimal coverage.",
+  "requestFramePermissions": []
+}
