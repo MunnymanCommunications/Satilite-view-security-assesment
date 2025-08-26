@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis } from './services/geminiService';
 import LocationInput from './components/LocationInput';
@@ -6,7 +6,10 @@ import AerialView from './components/AerialView';
 import SecurityReport from './components/SecurityReport';
 import ErrorMessage from './components/ErrorMessage';
 import MapPinIcon from './components/icons/MapPinIcon';
-import ExclamationTriangleIcon from './components/icons/ExclamationTriangleIcon';
+import ApiConfigurationMessage from './components/ApiConfigurationMessage';
+
+const geminiApiKey = process.env.API_KEY;
+const googleMapsApiKey = process.env.MAPS_API_KEY;
 
 const App: React.FC = () => {
   const [location, setLocation] = useState('');
@@ -14,15 +17,7 @@ const App: React.FC = () => {
   const [securityAnalysis, setSecurityAnalysis] = useState<SecurityAnalysis | null>(null);
   const [step, setStep] = useState<AnalysisStep>(AnalysisStep.INPUT);
   const [error, setError] = useState<string>('');
-  const [isConfigured, setIsConfigured] = useState(false);
-
-  useEffect(() => {
-    // Check for the Gemini API key from the environment.
-    if (process.env.API_KEY) {
-      setIsConfigured(true);
-    }
-  }, []);
-
+  
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -57,7 +52,7 @@ const App: React.FC = () => {
     setError('');
     setStep(AnalysisStep.INPUT);
   };
-  
+
   const getLoadingMessage = (): string => {
     if (step === AnalysisStep.FETCHING_IMAGE) {
       return "Retrieving satellite imagery from Google Maps...";
@@ -68,26 +63,12 @@ const App: React.FC = () => {
     return "";
   }
 
-  if (!isConfigured) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 font-sans">
-        <div className="w-full max-w-lg bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-yellow-500/50 shadow-2xl">
-          <div className="flex items-center gap-4 mb-4">
-            <ExclamationTriangleIcon className="w-8 h-8 text-yellow-400" />
-            <h1 className="text-2xl font-bold text-white">Configuration Required</h1>
-          </div>
-          <p className="text-gray-300 leading-relaxed">
-            The Gemini API key is not configured for this application. Please set the 
-            <code className="bg-gray-900/70 text-yellow-300 font-mono text-sm px-1.5 py-1 rounded-md mx-1">API_KEY</code> 
-            environment variable to proceed.
-          </p>
-        </div>
-      </div>
-    );
+  if (!geminiApiKey || !googleMapsApiKey) {
+    return <ApiConfigurationMessage />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 sm:p-8 font-sans">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
       <header className="text-center mb-8">
         <div className="flex justify-center items-center gap-4 mb-2">
             <MapPinIcon className="w-10 h-10 text-blue-400" />

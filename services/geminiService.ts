@@ -26,7 +26,10 @@ async function urlToBase64(url: string): Promise<string> {
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
 export const getAerialViewFromAddress = async (address: string): Promise<string> => {
-  const mapsApiKey = 'AIzaSyD2lvVkgTNR-fQVzF0oWRB27Hol6JAolJ4';
+  const mapsApiKey = process.env.MAPS_API_KEY;
+  if (!mapsApiKey) {
+    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable.");
+  }
   
   // Step 1: Geocode the address to get latitude and longitude.
   const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${mapsApiKey}`;
@@ -90,7 +93,7 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
   const geminiApiKey = process.env.API_KEY;
   if (!geminiApiKey) {
-    throw new Error("Gemini API Key (API_KEY) is not configured in the environment.");
+    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable.");
   }
   const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
