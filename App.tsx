@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis } from './services/geminiService';
@@ -6,10 +7,9 @@ import AerialView from './components/AerialView';
 import SecurityReport from './components/SecurityReport';
 import ErrorMessage from './components/ErrorMessage';
 import MapPinIcon from './components/icons/MapPinIcon';
-import ApiConfigurationMessage from './components/ApiConfigurationMessage';
-
-const geminiApiKey = process.env.API_KEY;
-const googleMapsApiKey = process.env.MAPS_API_KEY;
+// FIX: Removed ApiConfigurationMessage and related logic to comply with API key handling guidelines.
+// The app must not prompt the user for API keys and should assume they are present in the environment.
+// The service layer is responsible for reading keys from process.env.
 
 const App: React.FC = () => {
   const [location, setLocation] = useState('');
@@ -61,10 +61,6 @@ const App: React.FC = () => {
       return "Analyzing property image and recommending camera placements...";
     }
     return "";
-  }
-
-  if (!geminiApiKey || !googleMapsApiKey) {
-    return <ApiConfigurationMessage />;
   }
 
   return (

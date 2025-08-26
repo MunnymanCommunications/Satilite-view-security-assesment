@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { SecurityAnalysis } from '../types';
 
@@ -26,8 +27,10 @@ async function urlToBase64(url: string): Promise<string> {
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
 export const getAerialViewFromAddress = async (address: string): Promise<string> => {
+  // FIX: Use process.env for API key to resolve TypeScript error and align with guidelines.
   const mapsApiKey = process.env.MAPS_API_KEY;
   if (!mapsApiKey) {
+    // FIX: Update error message to reflect the correct environment variable name.
     throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable.");
   }
   
@@ -91,11 +94,13 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
  * @returns A promise that resolves to a SecurityAnalysis object.
  */
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
-  const geminiApiKey = process.env.API_KEY;
-  if (!geminiApiKey) {
+  // FIX: Use process.env.API_KEY to resolve TypeScript error and comply with guidelines.
+  if (!process.env.API_KEY) {
+    // FIX: Update error message to reflect the correct environment variable name.
     throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable.");
   }
-  const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+  // FIX: Use process.env.API_KEY directly when initializing the client, as per guidelines.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   // Extract the raw base64 data from the data URL prefix.
   const base64Data = imageBase64.split(',')[1];
