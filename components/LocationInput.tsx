@@ -1,4 +1,3 @@
-
 import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -12,13 +11,13 @@ interface LocationInputProps {
 const LocationInput: React.FC<LocationInputProps> = ({ location, setLocation, onSubmit, isLoading }) => {
   return (
     <form onSubmit={onSubmit} className="w-full max-w-2xl">
-      <div className="flex items-center bg-gray-800 border-2 border-gray-700 rounded-full shadow-lg overflow-hidden">
+      <div className="flex items-center bg-indigo-900 border-2 border-indigo-800 rounded-full shadow-lg overflow-hidden">
         <input
           type="text"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="Enter a full property address (e.g., 123 Main St, Anytown, USA)"
-          className="w-full bg-transparent text-white px-6 py-4 placeholder-gray-500 focus:outline-none"
+          className="w-full bg-transparent text-white px-6 py-4 placeholder-indigo-400 focus:outline-none"
           disabled={isLoading}
         />
         <button

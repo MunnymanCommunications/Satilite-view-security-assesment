@@ -17,8 +17,8 @@ const ApiConfiguration: React.FC<ApiConfigurationProps> = ({ onKeysSubmit }) => 
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-lg bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-blue-500/50 shadow-2xl animate-fade-in">
+    <div className="min-h-screen bg-indigo-950 text-white flex items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-lg bg-indigo-900/50 backdrop-blur-sm rounded-xl p-8 border border-blue-500/50 shadow-2xl animate-fade-in">
         <div className="flex items-center gap-4 mb-4">
           <KeyIcon className="w-8 h-8 text-blue-400" />
           <h1 className="text-2xl font-bold text-white">API Key Configuration</h1>
@@ -37,7 +37,7 @@ const ApiConfiguration: React.FC<ApiConfigurationProps> = ({ onKeysSubmit }) => 
               value={geminiKey}
               onChange={(e) => setGeminiKey(e.target.value)}
               placeholder="Enter your Gemini API Key"
-              className="w-full bg-gray-900/70 border border-gray-700 text-white rounded-lg px-4 py-3 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-indigo-950/70 border border-indigo-800 text-white rounded-lg px-4 py-3 placeholder-indigo-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               aria-label="Google Gemini API Key Input"
             />
@@ -53,11 +53,11 @@ const ApiConfiguration: React.FC<ApiConfigurationProps> = ({ onKeysSubmit }) => 
               value={mapsKey}
               onChange={(e) => setMapsKey(e.target.value)}
               placeholder="Enter your Google Maps API Key"
-              className="w-full bg-gray-900/70 border border-gray-700 text-white rounded-lg px-4 py-3 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-indigo-950/70 border border-indigo-800 text-white rounded-lg px-4 py-3 placeholder-indigo-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               aria-label="Google Maps API Key Input"
             />
-            <p className="text-xs text-gray-400 mt-1">Ensure 'Geocoding API' and 'Maps Static API' are enabled.</p>
+            <p className="text-xs text-indigo-300 mt-1">Ensure 'Geocoding API' and 'Maps Static API' are enabled.</p>
              <a href="https://console.cloud.google.com/google/maps-apis/overview" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">Get your key from Google Cloud Console</a>
           </div>
           <button

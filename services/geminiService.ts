@@ -26,12 +26,11 @@ async function urlToBase64(url: string): Promise<string> {
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
 export const getAerialViewFromAddress = async (address: string): Promise<string> => {
-  // In a Vite project, environment variables exposed to the client must be prefixed with VITE_.
-  // FIX: Switched from import.meta.env to process.env to resolve TypeScript errors about 'import.meta.env'.
+  // Fix: Adhere to coding guidelines by using process.env for API keys.
   const mapsApiKey = process.env.MAPS_API_KEY;
   if (!mapsApiKey) {
-    // FIX: Updated error message to reflect the new environment variable name.
-    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable in your deployment settings.");
+    // This error should ideally be caught by the main App component's check, but it's here as a safeguard.
+    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable in your deployment settings and redeploy.");
   }
   
   // Step 1: Geocode the address to get latitude and longitude.
@@ -94,15 +93,13 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
  * @returns A promise that resolves to a SecurityAnalysis object.
  */
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
-  // In a Vite project, environment variables exposed to the client must be prefixed with VITE_.
-  // FIX: Using process.env.API_KEY to comply with Gemini API guidelines and fix TypeScript errors about 'import.meta.env'.
-  const geminiApiKey = process.env.API_KEY;
-  if (!geminiApiKey) {
-    // FIX: Updated error message to reflect the new environment variable name per guidelines.
-    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable in your deployment settings.");
+  // Fix: Adhere to coding guidelines by using process.env.API_KEY directly.
+  if (!process.env.API_KEY) {
+     // This error should ideally be caught by the main App component's check, but it's here as a safeguard.
+    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable in your deployment settings and redeploy.");
   }
   
-  const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   // Extract the raw base64 data from the data URL prefix.
   const base64Data = imageBase64.split(',')[1];
@@ -119,7 +116,7 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
     
     Your task is to:
     1. Provide a brief security overview, identifying potential vulnerabilities visible in the image (e.g., easy access points, blind spots, secluded areas, unprotected windows).
-    2. Recommend optimal locations for security cameras to ensure maximum coverage. For each placement, specify the location, the reason for placing a camera there, and a suitable camera type.
+    2. Recommend optimal locations for security cameras to ensure maximum coverage. For each placement, specify the location, the reason for placing a camera there, a suitable camera type, and its approximate coordinates (x, y) on the image as percentages (from 0 to 100 for both x and y, with {x:0, y:0} being the top-left corner).
     
     Present the output as a JSON object.`
   };
@@ -136,7 +133,7 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
         description: "A list of recommended camera placements.",
         items: {
           type: Type.OBJECT,
-          required: ["location", "reason", "cameraType"],
+          required: ["location", "reason", "cameraType", "coordinates"],
           properties: {
             location: {
               type: Type.STRING,
@@ -149,7 +146,22 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
             cameraType: {
               type: Type.STRING,
               description: "The recommended type of camera (e.g., 'Doorbell Camera', 'Wide-Angle Outdoor', 'Floodlight Cam')."
-            }
+            },
+            coordinates: {
+                type: Type.OBJECT,
+                description: "The approximate (x, y) coordinates on the image for the camera placement, as percentages.",
+                required: ["x", "y"],
+                properties: {
+                  x: {
+                    type: Type.NUMBER,
+                    description: "The horizontal position (x-coordinate) as a percentage from the left edge (0-100)."
+                  },
+                  y: {
+                    type: Type.NUMBER,
+                    description: "The vertical position (y-coordinate) as a percentage from the top edge (0-100)."
+                  }
+                }
+              }
           }
         }
       }

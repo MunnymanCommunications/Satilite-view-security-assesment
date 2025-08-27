@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis } from './services/geminiService';
@@ -7,9 +6,10 @@ import AerialView from './components/AerialView';
 import SecurityReport from './components/SecurityReport';
 import ErrorMessage from './components/ErrorMessage';
 import MapPinIcon from './components/icons/MapPinIcon';
-// FIX: Removed ApiConfigurationMessage and related logic to comply with API key handling guidelines.
+
+// Fix: Removed API key check UI to adhere to coding guidelines.
 // The app must not prompt the user for API keys and should assume they are present in the environment.
-// The service layer is responsible for reading keys from process.env.
+// The service layer is responsible for reading keys from the environment and will throw an error if they are missing.
 
 const App: React.FC = () => {
   const [location, setLocation] = useState('');
@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [securityAnalysis, setSecurityAnalysis] = useState<SecurityAnalysis | null>(null);
   const [step, setStep] = useState<AnalysisStep>(AnalysisStep.INPUT);
   const [error, setError] = useState<string>('');
+  const [hoveredPlacement, setHoveredPlacement] = useState<number | null>(null);
   
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
@@ -64,7 +65,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
+    <div className="min-h-screen bg-indigo-950 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
       <header className="text-center mb-8">
         <div className="flex justify-center items-center gap-4 mb-2">
             <MapPinIcon className="w-10 h-10 text-blue-400" />
@@ -72,7 +73,7 @@ const App: React.FC = () => {
                 AI Security Surveyor
             </h1>
         </div>
-        <p className="text-lg text-gray-400 max-w-2xl">
+        <p className="text-lg text-indigo-300 max-w-2xl">
           Enter a property address to retrieve real satellite imagery and receive a complete security camera placement plan.
         </p>
       </header>
@@ -100,7 +101,7 @@ const App: React.FC = () => {
             <ErrorMessage message={error} />
             <button 
               onClick={handleReset} 
-              className="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors"
+              className="mt-4 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-full transition-colors"
             >
               Try Again
             </button>
@@ -109,18 +110,25 @@ const App: React.FC = () => {
         
         {(step !== AnalysisStep.INPUT && step !== AnalysisStep.ERROR) && (
           <div className="w-full max-w-5xl flex flex-col items-center gap-8 animate-fade-in">
-            <div className="w-full p-4 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
+            <div className="w-full p-4 bg-indigo-900 rounded-xl shadow-lg border border-indigo-800">
                 <p className="text-gray-300 font-mono text-sm break-words"><span className="font-bold text-blue-400">Address:</span> {location}</p>
             </div>
-            <AerialView imageUrl={aerialImage} />
+            <AerialView 
+              imageUrl={aerialImage}
+              placements={securityAnalysis?.placements}
+              hoveredPlacement={hoveredPlacement}
+            />
             
             {isLoading && (
-              <div className="text-center text-gray-400 p-4">
+              <div className="text-center text-indigo-300 p-4">
                 <p>{getLoadingMessage()}</p>
               </div>
             )}
             
-            <SecurityReport analysis={securityAnalysis} />
+            <SecurityReport 
+              analysis={securityAnalysis}
+              onPlacementHover={setHoveredPlacement}
+            />
 
             {step === AnalysisStep.COMPLETE && (
               <button 
@@ -134,7 +142,7 @@ const App: React.FC = () => {
         )}
       </main>
       
-      <footer className="mt-auto pt-8 text-center text-gray-600 text-sm">
+      <footer className="mt-auto pt-8 text-center text-indigo-400 text-sm">
         <p>Powered by Google Gemini & Google Maps. For informational purposes only.</p>
       </footer>
     </div>
