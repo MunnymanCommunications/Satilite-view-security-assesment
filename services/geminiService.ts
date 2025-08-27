@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { SecurityAnalysis } from '../types';
 
@@ -27,11 +26,12 @@ async function urlToBase64(url: string): Promise<string> {
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
 export const getAerialViewFromAddress = async (address: string): Promise<string> => {
-  // FIX: Use process.env for API key to resolve TypeScript error and align with guidelines.
+  // In a Vite project, environment variables exposed to the client must be prefixed with VITE_.
+  // FIX: Switched from import.meta.env to process.env to resolve TypeScript errors about 'import.meta.env'.
   const mapsApiKey = process.env.MAPS_API_KEY;
   if (!mapsApiKey) {
-    // FIX: Update error message to reflect the correct environment variable name.
-    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable.");
+    // FIX: Updated error message to reflect the new environment variable name.
+    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable in your deployment settings.");
   }
   
   // Step 1: Geocode the address to get latitude and longitude.
@@ -94,13 +94,15 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
  * @returns A promise that resolves to a SecurityAnalysis object.
  */
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
-  // FIX: Use process.env.API_KEY to resolve TypeScript error and comply with guidelines.
-  if (!process.env.API_KEY) {
-    // FIX: Update error message to reflect the correct environment variable name.
-    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable.");
+  // In a Vite project, environment variables exposed to the client must be prefixed with VITE_.
+  // FIX: Using process.env.API_KEY to comply with Gemini API guidelines and fix TypeScript errors about 'import.meta.env'.
+  const geminiApiKey = process.env.API_KEY;
+  if (!geminiApiKey) {
+    // FIX: Updated error message to reflect the new environment variable name per guidelines.
+    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable in your deployment settings.");
   }
-  // FIX: Use process.env.API_KEY directly when initializing the client, as per guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
   // Extract the raw base64 data from the data URL prefix.
   const base64Data = imageBase64.split(',')[1];
