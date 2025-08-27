@@ -2,6 +2,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { SecurityAnalysis } from '../types';
 
 /**
+ * Custom error for when Google Maps API key is likely restricted.
+ */
+export class MapsRequestDeniedError extends Error {}
+
+/**
  * Converts an image from a URL to a base64 data URL.
  * @param url The URL of the image to convert.
  * @returns A promise that resolves with the base64 data URL.
@@ -56,7 +61,8 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
         if (geocodeData.error_message) {
             userFriendlyError += ` (Google's message: ${geocodeData.error_message})`;
         }
-        break;
+        // Throw a specific error for this case
+        throw new MapsRequestDeniedError(userFriendlyError);
       case 'OVER_QUERY_LIMIT':
         userFriendlyError = "The application has exceeded its daily usage limit for the Google Maps API. Please try again later.";
         break;

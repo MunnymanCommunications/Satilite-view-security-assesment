@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
-import { getAerialViewFromAddress, getSecurityAnalysis } from './services/geminiService';
+import { getAerialViewFromAddress, getSecurityAnalysis, MapsRequestDeniedError } from './services/geminiService';
 import LocationInput from './components/LocationInput';
 import AerialView from './components/AerialView';
 import SecurityReport from './components/SecurityReport';
@@ -40,8 +40,14 @@ const App: React.FC = () => {
 
       setStep(AnalysisStep.COMPLETE);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setError(errorMessage);
+       if (err instanceof MapsRequestDeniedError) {
+        const origin = window.location.origin;
+        const detailedError = `Request Denied by Google Maps.\n\nThis usually means your API key is restricted. To fix this, you must add your website's URL to the allowed list in your Google Cloud Console.\n\n1. Go to Google Cloud Console -> APIs & Services -> Credentials.\n2. Find your Maps API Key and click to edit it.\n3. Under "Application restrictions", select "Websites".\n4. Click "Add" and enter the following URL:\n\n   ${origin}/*\n\nIt may take a few minutes for the change to take effect.`;
+        setError(detailedError);
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        setError(errorMessage);
+      }
       setStep(AnalysisStep.ERROR);
     }
   }, [location, isLoading]);
