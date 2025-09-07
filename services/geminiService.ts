@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { SecurityAnalysis } from '../types';
 
@@ -31,11 +32,9 @@ async function urlToBase64(url: string): Promise<string> {
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
 export const getAerialViewFromAddress = async (address: string): Promise<string> => {
-  // Fix: Adhere to coding guidelines by using process.env for API keys.
-  const mapsApiKey = process.env.MAPS_API_KEY;
+  const mapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
   if (!mapsApiKey) {
-    // This error should ideally be caught by the main App component's check, but it's here as a safeguard.
-    throw new Error("Google Maps API Key is not configured. Please set the MAPS_API_KEY environment variable in your deployment settings and redeploy.");
+    throw new Error("Google Maps API Key is not configured. Please set the VITE_MAPS_API_KEY environment variable in your deployment settings and redeploy.");
   }
   
   // Step 1: Geocode the address to get latitude and longitude.
@@ -99,14 +98,11 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
  * @returns A promise that resolves to a SecurityAnalysis object.
  */
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
-  // Fix: Adhere to coding guidelines by using process.env.API_KEY directly.
-  if (!process.env.API_KEY) {
-     // This error should ideally be caught by the main App component's check, but it's here as a safeguard.
-    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable in your deployment settings and redeploy.");
+  const apiKey = import.meta.env.VITE_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is not configured. Please set the VITE_API_KEY environment variable in your deployment settings and redeploy.");
   }
   
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
   // Extract the raw base64 data from the data URL prefix.
   const base64Data = imageBase64.split(',')[1];
 
@@ -175,6 +171,8 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   try {
+    // FIX: A redundant GoogleGenAI client initialization was removed. The client is now created here, just before it is used.
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: { parts: [textPart, imagePart] },
