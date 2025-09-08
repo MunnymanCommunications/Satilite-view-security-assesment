@@ -114,14 +114,23 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   const textPart = {
-    text: `You are a professional security consultant. Analyze the provided satellite image of a property, which is located at or near the address: "${address}". 
-    
-    Your task is to:
-    1. Provide a brief security overview, identifying potential vulnerabilities visible in the image (e.g., easy access points, blind spots, secluded areas, unprotected windows).
-    2. Recommend optimal locations for security cameras to ensure maximum coverage. For each placement, specify the location, the reason for placing a camera there, a suitable camera type, and its approximate coordinates (x, y) on the image as percentages (from 0 to 100 for both x and y, with {x:0, y:0} being the top-left corner).
-    
-    Ensure the (x, y) coordinates are as precise as possible, corresponding to the location you described on the provided image.
-    Present the output as a JSON object.`
+    text: `You are an expert security risk assessor. Your task is to perform a detailed security analysis of the residential property shown in the center of the provided satellite image, located at "${address}". Assume North is at the top of the image.
+
+Your analysis must be comprehensive. Your response must be a JSON object.
+
+1.  **Detailed Security Overview:**
+    *   Identify the primary residence in the image and focus your analysis there. Ignore adjacent properties unless they present a clear and direct security risk (e.g., an overgrown tree providing cover).
+    *   Evaluate the property's perimeter, including fences, gates, and natural borders.
+    *   Identify all potential access points, such as driveways, walkways, and side yards.
+    *   Pinpoint specific vulnerabilities of the main building, such as ground-floor windows, sliding glass doors, secluded entryways, and areas with poor natural surveillance.
+    *   Analyze environmental factors like landscaping (trees, shrubs) that could offer concealment to intruders and identify significant blind spots created by the building's architecture.
+
+2.  **Camera Placement Recommendations:**
+    *   Based on your overview, recommend optimal locations for security cameras.
+    *   For each location, provide a clear description (e.g., 'Northeast corner of the house', 'Above the garage door'). Use cardinal directions (North, South, East, West).
+    *   Justify each placement by explaining the specific vulnerability it addresses and the coverage it provides.
+    *   Suggest an appropriate camera type (e.g., 'Wide-Angle Dome Camera with Night Vision', 'Floodlight Camera', 'Doorbell Camera').
+    *   Provide precise (x, y) coordinates on the image for each camera marker, as percentages from the top-left corner (0-100).`
   };
 
   const schema = {
@@ -129,7 +138,7 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
     properties: {
       overview: {
         type: Type.STRING,
-        description: "A brief security overview of the property based on the image, highlighting common vulnerabilities in 2-3 sentences."
+        description: "A comprehensive security overview of the property. It should detail perimeter security, access points, building vulnerabilities (windows, doors), and environmental factors like landscaping that could provide concealment. This should be a detailed paragraph."
       },
       placements: {
         type: Type.ARRAY,
@@ -140,7 +149,7 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
           properties: {
             location: {
               type: Type.STRING,
-              description: "The specific location for the camera (e.g., 'Front Door', 'Driveway', 'Backyard Patio')."
+              description: "The specific location for the camera, using cardinal directions (e.g., 'Northeast corner of the house', 'West-facing garage door', 'South side patio')."
             },
             reason: {
               type: Type.STRING,
