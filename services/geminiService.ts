@@ -115,22 +115,30 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   const textPart = {
-    text: `You are an expert security assessor. Analyze the satellite image for the property at "${address}". Your goal is to design a CCTV layout with ZERO blind spots. Focus on the building in the center. Your response must be a single, valid JSON object that follows the schema.
+    text: `You are a world-class physical security consultant. Your task is to analyze the provided satellite image for the property at "${address}" and produce a professional-grade security camera plan. Your response must be a single, valid JSON object.
 
-Instructions:
+**Core Mandate:**
+Your plan must be guided by established security best practices. The non-negotiable, primary objective is to achieve **100% exterior coverage of the central property and eliminate ALL blind spots.**
 
-1.  **Security Overview:** Write a detailed assessment. Analyze the perimeter, access points, building vulnerabilities, and environmental risks (landscaping, architectural blind spots).
+**JSON Output Instructions:**
 
-2.  **Camera Placements:**
-    *   **Coverage:** Use as many cameras as needed for 100% coverage. Overlap fields of view at critical points.
-    *   **Mounting Rule:** ALL cameras MUST be mounted on existing infrastructure (e.g., building walls, eaves, roofs, existing poles). DO NOT place cameras in open areas like lawns or parking lots.
-    *   **For each camera, provide:**
-        *   \`location\`: Use cardinal directions (e.g., "Northwest corner of the building").
-        *   \`reason\`: Explain the specific threat it mitigates.
-        *   \`cameraType\`: Suggest a specific model (e.g., "4K Bullet Camera", "PTZ Dome Camera").
-        *   \`coordinates\`: Provide precise {x, y} percentage coordinates for the image marker.
+1.  **Comprehensive Security Overview:**
+    *   Provide an in-depth, thorough analysis. Go beyond the obvious.
+    *   Identify likely threat vectors and paths of approach for intruders.
+    *   Scrutinize every access point: doors, garage, and all windows (especially ground floor).
+    *   Evaluate environmental factors: analyze landscaping for concealment opportunities, consider the impact of potential lighting conditions, and note vulnerabilities from adjacent properties or public access.
+    *   Pinpoint architectural blind spots, recessed doorways, or any area where an individual could operate undetected.
 
-3.  **Equipment Summary:** Create a \`cameraSummary\` list that totals the quantity of each camera type required.
+2.  **Strategic Camera Placements:**
+    *   **Strict Mounting Protocol:** All cameras MUST be mounted on existing, practical infrastructure (building walls, eaves, rooftops, fences, existing poles). For large open areas (fields, parking lots), place cameras on surrounding perimeter structures to provide overlapping fields of view. No cameras should "float" in open space. Rooftops should be considered for wide, unobstructed views.
+    *   **For each camera, you must provide:**
+        *   \`location\`: A clear, specific location using cardinal directions.
+        *   \`reason\`: A detailed justification. This MUST reference a specific vulnerability identified in your overview and explain the security principle being applied (e.g., "To monitor the primary approach vector to the front door," or "To cover the vulnerable, unlit southern perimeter fence line.").
+        *   \`cameraType\`: A specific camera type justified by its intended function (e.g., "4K Turret Camera with IR" for night vision in a dark area, "PTZ Camera" for active monitoring of a large lot).
+        *   \`coordinates\`: Precise {x, y} percentage coordinates for the image marker.
+
+3.  **Required Equipment Summary:**
+    *   Create a \`cameraSummary\` that provides a simple tally of the quantity of each camera type required for the installation.
 `
   };
 
