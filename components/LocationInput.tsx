@@ -6,9 +6,10 @@ interface LocationInputProps {
   setLocation: (location: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
+  buttonText?: string;
 }
 
-const LocationInput: React.FC<LocationInputProps> = ({ location, setLocation, onSubmit, isLoading }) => {
+const LocationInput: React.FC<LocationInputProps> = ({ location, setLocation, onSubmit, isLoading, buttonText = 'Analyze' }) => {
   return (
     <form onSubmit={onSubmit} className="w-full max-w-2xl">
       <div className="flex items-center bg-indigo-900 border-2 border-indigo-800 rounded-full shadow-lg overflow-hidden">
@@ -23,9 +24,9 @@ const LocationInput: React.FC<LocationInputProps> = ({ location, setLocation, on
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-bold py-4 px-8 transition-colors duration-300 flex items-center justify-center min-w-[150px]"
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-bold py-4 px-8 transition-colors duration-300 flex items-center justify-center min-w-[180px]"
         >
-          {isLoading ? <LoadingSpinner /> : 'Analyze'}
+          {isLoading ? <LoadingSpinner /> : buttonText}
         </button>
       </div>
     </form>

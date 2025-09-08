@@ -10,6 +10,7 @@ import MapPinIcon from './components/icons/MapPinIcon';
 import ApiConfigurationMessage from './components/ApiConfigurationMessage';
 import PrinterIcon from './components/icons/PrinterIcon';
 import LoadingSpinner from './components/LoadingSpinner';
+import SparklesIcon from './components/icons/SparklesIcon';
 
 
 const MIN_ZOOM = 17;
@@ -17,8 +18,6 @@ const MAX_ZOOM = 21;
 const INITIAL_ZOOM = 19;
 
 // Safely check for environment variables.
-// In a Vite/build-tool environment, these are replaced at build time.
-// If there's no build step, `import.meta.env` will be undefined.
 const ARE_KEYS_CONFIGURED = import.meta.env?.VITE_API_KEY && import.meta.env?.VITE_MAPS_API_KEY;
 
 
@@ -35,15 +34,13 @@ const App: React.FC = () => {
 
   const aerialViewRef = useRef<HTMLDivElement>(null);
   
-  // If keys aren't available, show the configuration guide instead of the app.
-  // This prevents crashes and provides clear instructions to the user.
   if (!ARE_KEYS_CONFIGURED) {
     return <ApiConfigurationMessage />;
   }
   
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleGetView = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location.trim() || isLoading) return;
 
@@ -51,34 +48,51 @@ const App: React.FC = () => {
     setAerialImage(null);
     setSecurityAnalysis(null);
     setZoomLevel(INITIAL_ZOOM);
+    setStep(AnalysisStep.FETCHING_IMAGE);
 
     try {
-      setStep(AnalysisStep.FETCHING_IMAGE);
       const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM);
       setAerialImage(imageUrl);
-
-      setStep(AnalysisStep.ANALYZING);
-      const analysis = await getSecurityAnalysis(location, imageUrl);
-      setSecurityAnalysis(analysis);
-
-      setStep(AnalysisStep.COMPLETE);
+      setStep(AnalysisStep.AWAITING_ANALYSIS);
     } catch (err) {
-       if (err instanceof MapsRequestDeniedError) {
-        const origin = window.location.origin;
-        const detailedError = `Request Denied by Google Maps.\n\nThis usually means your API key is restricted. To fix this, you must add your website's URL to the allowed list in your Google Cloud Console.\n\n1. Go to Google Cloud Console -> APIs & Services -> Credentials.\n2. Find your Maps API Key and click to edit it.\n3. Under "Application restrictions", select "Websites".\n4. Click "Add" and enter the following URL:\n\n   ${origin}/*\n\nIt may take a few minutes for the change to take effect.`;
-        setError(detailedError);
-      } else {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-        setError(errorMessage);
-      }
-      setStep(AnalysisStep.ERROR);
+      handleError(err);
     }
   }, [location, isLoading]);
+
+  const handleStartAnalysis = useCallback(async () => {
+    if (!aerialImage || isLoading) return;
+
+    setError('');
+    setStep(AnalysisStep.ANALYZING);
+
+    try {
+      const analysis = await getSecurityAnalysis(location, aerialImage);
+      setSecurityAnalysis(analysis);
+      setStep(AnalysisStep.COMPLETE);
+    } catch (err) {
+      handleError(err);
+    }
+  }, [location, aerialImage, isLoading]);
+
+  const handleError = (err: unknown) => {
+    if (err instanceof MapsRequestDeniedError) {
+      const origin = window.location.origin;
+      const detailedError = `Request Denied by Google Maps.\n\nThis usually means your API key is restricted. To fix this, you must add your website's URL to the allowed list in your Google Cloud Console.\n\n1. Go to Google Cloud Console -> APIs & Services -> Credentials.\n2. Find your Maps API Key and click to edit it.\n3. Under "Application restrictions", select "Websites".\n4. Click "Add" and enter the following URL:\n\n   ${origin}/*\n\nIt may take a few minutes for the change to take effect.`;
+      setError(detailedError);
+    } else {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setError(errorMessage);
+    }
+    setStep(AnalysisStep.ERROR);
+  };
 
   const handleZoomChange = useCallback(async (newZoom: number) => {
     if (isImageLoading || !location || newZoom < MIN_ZOOM || newZoom > MAX_ZOOM) {
       return;
     }
+    // Disallow zooming once analysis is complete to prevent marker misalignment
+    if (step === AnalysisStep.COMPLETE) return;
+
     setIsImageLoading(true);
     setError('');
     try {
@@ -91,7 +105,7 @@ const App: React.FC = () => {
     } finally {
       setIsImageLoading(false);
     }
-  }, [location, isImageLoading]);
+  }, [location, isImageLoading, step]);
 
   const handleGenerateReport = async () => {
     if (!aerialViewRef.current || !securityAnalysis || isGeneratingPdf) return;
@@ -128,8 +142,8 @@ const App: React.FC = () => {
     return "";
   }
 
-  const canZoomIn = zoomLevel < MAX_ZOOM;
-  const canZoomOut = zoomLevel > MIN_ZOOM;
+  const canZoomIn = zoomLevel < MAX_ZOOM && step !== AnalysisStep.COMPLETE;
+  const canZoomOut = zoomLevel > MIN_ZOOM && step !== AnalysisStep.COMPLETE;
 
   return (
     <div className="min-h-screen bg-indigo-950 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
@@ -141,7 +155,7 @@ const App: React.FC = () => {
             </h1>
         </div>
         <p className="text-lg text-indigo-300 max-w-2xl">
-          Enter a property address to retrieve real satellite imagery and receive a complete security camera placement plan.
+          Enter an address to get a satellite image, frame your property, and receive a complete security camera plan.
         </p>
       </header>
 
@@ -151,8 +165,9 @@ const App: React.FC = () => {
             <LocationInput 
               location={location}
               setLocation={setLocation}
-              onSubmit={handleSubmit}
+              onSubmit={handleGetView}
               isLoading={isLoading}
+              buttonText="Get Aerial View"
             />
           </div>
         )}
@@ -162,8 +177,9 @@ const App: React.FC = () => {
              <LocationInput 
               location={location}
               setLocation={setLocation}
-              onSubmit={handleSubmit}
+              onSubmit={handleGetView}
               isLoading={isLoading}
+              buttonText="Get Aerial View"
             />
             <ErrorMessage message={error} />
             <button 
@@ -200,11 +216,26 @@ const App: React.FC = () => {
               </div>
             )}
             
-            <SecurityReport 
-              analysis={securityAnalysis}
-              onPlacementHover={setHoveredPlacement}
-            />
+            {step === AnalysisStep.AWAITING_ANALYSIS && !isLoading && (
+              <div className="text-center bg-indigo-900/50 border border-indigo-800 rounded-lg p-6 w-full max-w-2xl">
+                <p className="text-indigo-200 mb-4">Use the zoom controls on the image to frame the property correctly.</p>
+                <button 
+                  onClick={handleStartAnalysis} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg flex items-center justify-center gap-3 w-full sm:w-auto"
+                >
+                  <SparklesIcon className="w-6 h-6"/>
+                  Analyze Security
+                </button>
+              </div>
+            )}
 
+            {(step === AnalysisStep.ANALYZING || step === AnalysisStep.COMPLETE) && (
+              <SecurityReport 
+                analysis={securityAnalysis}
+                onPlacementHover={setHoveredPlacement}
+              />
+            )}
+            
             {step === AnalysisStep.COMPLETE && (
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <button 
@@ -228,7 +259,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="mt-auto pt-8 text-center text-indigo-400 text-sm">
-        <p>Powered by Google Gemini & Google Maps. For informational purposes only.</p>
+        <p>Powered by proprietary technology. For informational purposes only.</p>
       </footer>
     </div>
   );

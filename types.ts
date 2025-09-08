@@ -17,6 +17,7 @@ export interface SecurityAnalysis {
 export enum AnalysisStep {
   INPUT,
   FETCHING_IMAGE,
+  AWAITING_ANALYSIS,
   ANALYZING,
   COMPLETE,
   ERROR
