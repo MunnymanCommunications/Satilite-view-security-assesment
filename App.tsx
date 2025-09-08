@@ -13,9 +13,10 @@ import LoadingSpinner from './components/LoadingSpinner';
 import SparklesIcon from './components/icons/SparklesIcon';
 
 
-const MIN_ZOOM = 17;
-const MAX_ZOOM = 21;
 const INITIAL_ZOOM = 19;
+const MIN_SCALE = 1.0;
+const MAX_SCALE = 2.0;
+const SCALE_STEP = 0.2;
 
 // Safely check for environment variables.
 const ARE_KEYS_CONFIGURED = import.meta.env?.VITE_API_KEY && import.meta.env?.VITE_MAPS_API_KEY;
@@ -28,8 +29,7 @@ const App: React.FC = () => {
   const [step, setStep] = useState<AnalysisStep>(AnalysisStep.INPUT);
   const [error, setError] = useState<string>('');
   const [hoveredPlacement, setHoveredPlacement] = useState<number | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(INITIAL_ZOOM);
-  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [scale, setScale] = useState(MIN_SCALE);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const aerialViewRef = useRef<HTMLDivElement>(null);
@@ -40,47 +40,25 @@ const App: React.FC = () => {
   
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
-  const handleGetView = useCallback((e: React.FormEvent) => {
+  const handleGetView = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location.trim() || isLoading) return;
 
     setError('');
     setAerialImage(null);
     setSecurityAnalysis(null);
-    setZoomLevel(INITIAL_ZOOM);
-    // This step triggers the useEffect hook to fetch the image dynamically
+    setScale(MIN_SCALE);
     setStep(AnalysisStep.FETCHING_IMAGE);
+
+    try {
+      // Fetch a fixed-size, high-res image for consistency.
+      const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM);
+      setAerialImage(imageUrl);
+      setStep(AnalysisStep.AWAITING_ANALYSIS);
+    } catch (err) {
+      handleError(err);
+    }
   }, [location, isLoading]);
-
-  useEffect(() => {
-    const fetchImageForContainer = async () => {
-      if (step === AnalysisStep.FETCHING_IMAGE && aerialViewRef.current) {
-        
-        const container = aerialViewRef.current;
-        // The container needs a moment to be painted to have a width
-        if (container.clientWidth === 0) {
-            setTimeout(fetchImageForContainer, 50); 
-            return;
-        }
-
-        // Cap width to prevent overly large API requests
-        const width = Math.round(Math.min(container.clientWidth, 1024));
-        // Calculate height based on a 16:9 aspect ratio to match the UI
-        const height = Math.round(width * (9 / 16));
-
-        try {
-          const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM, width, height);
-          setAerialImage(imageUrl);
-          setStep(AnalysisStep.AWAITING_ANALYSIS);
-        } catch (err) {
-          handleError(err);
-        }
-      }
-    };
-
-    fetchImageForContainer();
-  }, [step, location]);
-
 
   const handleStartAnalysis = useCallback(async () => {
     if (!aerialImage || isLoading) return;
@@ -109,31 +87,6 @@ const App: React.FC = () => {
     setStep(AnalysisStep.ERROR);
   };
 
-  const handleZoomChange = useCallback(async (newZoom: number) => {
-    if (isImageLoading || !location || newZoom < MIN_ZOOM || newZoom > MAX_ZOOM || !aerialViewRef.current) {
-      return;
-    }
-    // Disallow zooming once analysis is complete to prevent marker misalignment
-    if (step === AnalysisStep.COMPLETE) return;
-
-    setIsImageLoading(true);
-    setError('');
-    try {
-      const container = aerialViewRef.current;
-      const width = Math.round(Math.min(container.clientWidth, 1024));
-      const height = Math.round(width * (9 / 16));
-      
-      const imageUrl = await getAerialViewFromAddress(location, newZoom, width, height);
-      setAerialImage(imageUrl);
-      setZoomLevel(newZoom);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching the new map image.';
-      setError(errorMessage);
-    } finally {
-      setIsImageLoading(false);
-    }
-  }, [location, isImageLoading, step]);
-
   const handleGenerateReport = async () => {
     if (!aerialViewRef.current || !securityAnalysis || isGeneratingPdf) return;
 
@@ -156,7 +109,7 @@ const App: React.FC = () => {
     setSecurityAnalysis(null);
     setError('');
     setStep(AnalysisStep.INPUT);
-    setZoomLevel(INITIAL_ZOOM);
+    setScale(MIN_SCALE);
   };
 
   const getLoadingMessage = (): string => {
@@ -169,8 +122,9 @@ const App: React.FC = () => {
     return "";
   }
 
-  const canZoomIn = zoomLevel < MAX_ZOOM && step !== AnalysisStep.COMPLETE;
-  const canZoomOut = zoomLevel > MIN_ZOOM && step !== AnalysisStep.COMPLETE;
+  // Zoom is now a client-side scaling operation, only enabled after analysis.
+  const canZoomIn = step === AnalysisStep.COMPLETE && scale < MAX_SCALE;
+  const canZoomOut = step === AnalysisStep.COMPLETE && scale > MIN_SCALE;
 
   return (
     <div className="min-h-screen bg-indigo-950 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
@@ -182,7 +136,7 @@ const App: React.FC = () => {
             </h1>
         </div>
         <p className="text-lg text-indigo-300 max-w-2xl">
-          Enter an address to get a satellite image, frame your property, and receive a complete security camera plan.
+          Enter an address to get a satellite image and receive a complete security camera plan.
         </p>
       </header>
 
@@ -228,9 +182,9 @@ const App: React.FC = () => {
               imageUrl={aerialImage}
               placements={securityAnalysis?.placements}
               hoveredPlacement={hoveredPlacement}
-              isZooming={isImageLoading}
-              onZoomIn={() => handleZoomChange(zoomLevel + 1)}
-              onZoomOut={() => handleZoomChange(zoomLevel - 1)}
+              scale={scale}
+              onZoomIn={() => setScale(s => Math.min(s + SCALE_STEP, MAX_SCALE))}
+              onZoomOut={() => setScale(s => Math.max(s - SCALE_STEP, MIN_SCALE))}
               canZoomIn={canZoomIn}
               canZoomOut={canZoomOut}
             />
@@ -245,7 +199,7 @@ const App: React.FC = () => {
             
             {step === AnalysisStep.AWAITING_ANALYSIS && !isLoading && (
               <div className="text-center bg-indigo-900/50 border border-indigo-800 rounded-lg p-6 w-full max-w-2xl">
-                <p className="text-indigo-200 mb-4">Use the zoom controls on the image to frame the property correctly.</p>
+                <p className="text-indigo-200 mb-4">The property is framed. Click below to begin the analysis.</p>
                 <button 
                   onClick={handleStartAnalysis} 
                   className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg flex items-center justify-center gap-3 w-full sm:w-auto"

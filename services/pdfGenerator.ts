@@ -70,6 +70,7 @@ export const generatePdfReport = async (
   pdf.setFont('helvetica', 'normal');
   const overviewLines = pdf.splitTextToSize(analysis.overview, contentWidth);
   overviewLines.forEach((line: string) => {
+    checkPageBreak(LINE_HEIGHT);
     pdf.text(line, MARGIN, yPosition);
     yPosition += LINE_HEIGHT;
   });
@@ -114,6 +115,28 @@ export const generatePdfReport = async (
     
     yPosition += 8; // Spacing between placements
   });
+  
+  // --- Equipment Summary ---
+  if (analysis.cameraSummary && analysis.cameraSummary.length > 0) {
+    const summaryHeight = 20 + (analysis.cameraSummary.length * LINE_HEIGHT);
+    checkPageBreak(summaryHeight);
+
+    yPosition += 2; // Add a bit of space before the next section
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Required Equipment Summary', MARGIN, yPosition);
+    yPosition += 10;
+
+    analysis.cameraSummary.forEach(item => {
+        pdf.setFontSize(FONT_SIZE_NORMAL);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(item.cameraType, MARGIN, yPosition);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`x ${item.quantity}`, pageWidth - MARGIN, yPosition, { align: 'right' });
+        yPosition += LINE_HEIGHT;
+    });
+  }
   
   // Sanitize address for filename
   const safeFilename = address.replace(/[^a-z0-9]/gi, '_').toLowerCase();

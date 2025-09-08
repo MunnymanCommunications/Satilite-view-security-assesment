@@ -8,7 +8,7 @@ interface AerialViewProps {
   imageUrl: string | null;
   placements?: CameraPlacement[] | null;
   hoveredPlacement?: number | null;
-  isZooming: boolean;
+  scale: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
   canZoomIn: boolean;
@@ -28,7 +28,7 @@ const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({
     imageUrl, 
     placements, 
     hoveredPlacement,
-    isZooming,
+    scale,
     onZoomIn,
     onZoomOut,
     canZoomIn,
@@ -43,44 +43,44 @@ const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({
   }
 
   return (
-    <div ref={ref} className="w-full rounded-lg overflow-hidden shadow-2xl border-4 border-indigo-800 relative group bg-indigo-950">
-       {isZooming && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-          <LoadingSpinner className="w-12 h-12 text-white" />
-        </div>
-      )}
-      <img src={imageUrl} alt="Satellite view of property" className="w-full h-full object-cover" />
-      {placements?.map((placement, index) => {
-        const isHovered = hoveredPlacement === index;
-        const color = MARKER_COLORS[index % MARKER_COLORS.length];
-        return (
-          <div
-            key={index}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ left: `${placement.coordinates.x}%`, top: `${placement.coordinates.y}%` }}
-            aria-hidden="true"
-          >
-            {/* Coverage area */}
+    <div ref={ref} className="w-full aspect-video rounded-lg overflow-hidden shadow-2xl border-4 border-indigo-800 relative group bg-indigo-950">
+      <div 
+        className="w-full h-full transition-transform duration-300 ease-in-out"
+        style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
+      >
+        <img src={imageUrl} alt="Satellite view of property" className="w-full h-full object-cover" />
+        {placements?.map((placement, index) => {
+          const isHovered = hoveredPlacement === index;
+          const color = MARKER_COLORS[index % MARKER_COLORS.length];
+          return (
             <div
-              className={`absolute w-32 h-32 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${isHovered ? 'scale-100 opacity-30' : 'scale-0 opacity-0'}`}
-              style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
-            />
-            {/* Marker dot */}
-            <div
-              className="w-4 h-4 rounded-full border-2 border-white shadow-lg transition-transform duration-300"
-              style={{ 
-                backgroundColor: color,
-                transform: `scale(${isHovered ? 1.5 : 1})`
-               }}
-            />
-          </div>
-        );
-      })}
+              key={index}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ left: `${placement.coordinates.x}%`, top: `${placement.coordinates.y}%` }}
+              aria-hidden="true"
+            >
+              {/* Coverage area */}
+              <div
+                className={`absolute w-32 h-32 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${isHovered ? 'scale-100 opacity-30' : 'scale-0 opacity-0'}`}
+                style={{ background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
+              />
+              {/* Marker dot */}
+              <div
+                className="w-4 h-4 rounded-full border-2 border-white shadow-lg transition-transform duration-300"
+                style={{ 
+                  backgroundColor: color,
+                  transform: `scale(${isHovered ? 1.5 : 1})`
+                 }}
+              />
+            </div>
+          );
+        })}
+      </div>
       {/* Zoom Controls */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
         <button 
           onClick={onZoomIn} 
-          disabled={!canZoomIn || isZooming}
+          disabled={!canZoomIn}
           className="bg-indigo-900/80 backdrop-blur-sm hover:bg-indigo-800 text-white rounded-full p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Zoom in"
         >
@@ -88,7 +88,7 @@ const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({
         </button>
         <button 
           onClick={onZoomOut} 
-          disabled={!canZoomOut || isZooming}
+          disabled={!canZoomOut}
           className="bg-indigo-900/80 backdrop-blur-sm hover:bg-indigo-800 text-white rounded-full p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Zoom out"
         >

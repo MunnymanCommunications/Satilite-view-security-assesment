@@ -74,7 +74,7 @@ const SecurityReport: React.FC<SecurityReportProps> = ({ analysis, onPlacementHo
         <p className="text-gray-300 leading-relaxed">{analysis.overview}</p>
       </div>
 
-      <div>
+      <div className="mb-8">
         <h3 className="text-xl font-semibold text-gray-200 mb-4">Recommended Placements</h3>
         <ul className="space-y-4">
           {analysis.placements.map((placement, index) => (
@@ -88,6 +88,20 @@ const SecurityReport: React.FC<SecurityReportProps> = ({ analysis, onPlacementHo
           ))}
         </ul>
       </div>
+
+      {analysis.cameraSummary && analysis.cameraSummary.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold text-gray-200 mb-4">Required Equipment Summary</h3>
+          <ul className="space-y-3 bg-indigo-900/50 rounded-lg p-6 border border-indigo-800">
+            {analysis.cameraSummary.map((item, index) => (
+              <li key={index} className="flex justify-between items-center text-gray-300">
+                <span className="font-medium text-white">{item.cameraType}</span>
+                <span className="font-mono bg-indigo-800 text-indigo-200 text-sm font-bold px-3 py-1 rounded-md">x {item.quantity}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

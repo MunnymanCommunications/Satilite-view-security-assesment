@@ -29,11 +29,9 @@ async function urlToBase64(url: string): Promise<string> {
  * Fetches a real satellite aerial view for a given address using Google Maps API.
  * @param address The property address string.
  * @param zoom The zoom level for the map (e.g., 17-21).
- * @param width The width of the desired image in pixels.
- * @param height The height of the desired image in pixels.
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
-export const getAerialViewFromAddress = async (address: string, zoom: number, width: number, height: number): Promise<string> => {
+export const getAerialViewFromAddress = async (address: string, zoom: number): Promise<string> => {
   const mapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
   if (!mapsApiKey) {
     throw new Error("Google Maps API Key is not configured. Please ensure VITE_MAPS_API_KEY is set in your environment variables.");
@@ -81,9 +79,8 @@ export const getAerialViewFromAddress = async (address: string, zoom: number, wi
   const { lat, lng } = geocodeData.results[0].geometry.location;
 
   // Step 2: Fetch the static satellite map image for the coordinates.
-  // The dimensions are now passed in dynamically to match the user's viewport exactly.
-  // This prevents image cropping/scaling and ensures coordinate accuracy.
-  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&maptype=satellite&key=${mapsApiKey}`;
+  // Using a fixed, high-resolution size to ensure consistency for the AI analysis across all devices.
+  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=1024x576&maptype=satellite&key=${mapsApiKey}`;
 
   // Step 3: Convert the fetched image to a base64 data URL to display in the app.
   try {
@@ -118,23 +115,31 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   const textPart = {
-    text: `You are an expert security risk assessor. Your task is to perform a detailed security analysis of the residential property shown in the center of the provided satellite image, located at "${address}". Assume North is at the top of the image.
+    text: `You are an expert security risk assessor specializing in physical security and CCTV system design. Your task is to perform a detailed security analysis of the property shown in the center of the provided satellite image, located at "${address}". Assume North is at the top of the image. The building structure in the center of the image is the primary focus of the evaluation.
 
-Your analysis must be comprehensive. Your response must be a JSON object.
+Your analysis must be comprehensive and thorough, with the primary objective of creating a camera layout that **eliminates all potential blind spots**. Your response must be a valid JSON object.
+
+**Core Directives:**
 
 1.  **Detailed Security Overview:**
-    *   Identify the primary residence in the image and focus your analysis there. Ignore adjacent properties unless they present a clear and direct security risk (e.g., an overgrown tree providing cover).
-    *   Evaluate the property's perimeter, including fences, gates, and natural borders.
-    *   Identify all potential access points, such as driveways, walkways, and side yards.
-    *   Pinpoint specific vulnerabilities of the main building, such as ground-floor windows, sliding glass doors, secluded entryways, and areas with poor natural surveillance.
-    *   Analyze environmental factors like landscaping (trees, shrubs) that could offer concealment to intruders and identify significant blind spots created by the building's architecture.
+    *   Focus your assessment exclusively on the central property.
+    *   Evaluate perimeter security (fences, gates), access routes (driveways, paths), building vulnerabilities (ground-floor windows, secluded doors), and environmental factors (landscaping, blind spots from architecture). Scrutinize every corner.
 
-2.  **Camera Placement Recommendations:**
-    *   Based on your overview, recommend optimal locations for security cameras.
-    *   For each location, provide a clear description (e.g., 'Northeast corner of the house', 'Above the garage door'). Use cardinal directions (North, South, East, West).
-    *   Justify each placement by explaining the specific vulnerability it addresses and the coverage it provides.
-    *   Suggest an appropriate camera type (e.g., 'Wide-Angle Dome Camera with Night Vision', 'Floodlight Camera', 'Doorbell Camera').
-    *   Provide precise (x, y) coordinates for each camera marker. These coordinates must be percentages from the top-left corner (e.g., {"x": 55.5, "y": 42.0}). Be as accurate as possible, as these will be used to place a visual marker directly on the image.`
+2.  **Camera Placement Principles & Recommendations:**
+    *   **Goal: No Blind Spots.** Propose as many cameras as necessary to achieve complete coverage of the property's exterior, access points, and vulnerable areas. Prioritize overlapping fields of view at critical points.
+    *   **Best Practices for Mounting:** Adhere strictly to professional installation standards. All cameras MUST be placed on existing infrastructure.
+        *   **Valid Locations:** Building walls (especially corners for wide views), rooftops, eaves, porch ceilings, existing poles (light poles, utility poles on the property), or other permanent structures.
+        *   **Invalid Locations:** DO NOT place cameras floating in the middle of open areas like lawns, fields, or parking lots unless there is a clear structure to mount it on.
+    *   For each recommended placement, provide:
+        *   A clear location description using cardinal directions (e.g., 'Southeast corner of the main building, under the eave').
+        *   A justification explaining the specific vulnerability it covers.
+        *   A suggested, specific camera type (e.g., '4K Bullet Camera with Motorized Zoom', 'PTZ Dome Camera', 'License Plate Reader (LPR) Camera', 'Floodlight Camera').
+        *   Precise (x, y) percentage coordinates for placing a marker on the image.
+
+3.  **Camera Summary List:**
+    *   After the placements, provide a summary list that totals the number of each type of camera required for the installation. This list should be a simple breakdown of the camera models and their quantities.
+
+Your final JSON output must conform to the provided schema.`
   };
 
   const schema = {
@@ -161,7 +166,7 @@ Your analysis must be comprehensive. Your response must be a JSON object.
             },
             cameraType: {
               type: Type.STRING,
-              description: "The recommended type of camera (e.g., 'Doorbell Camera', 'Wide-Angle Outdoor', 'Floodlight Cam')."
+              description: "The recommended type of camera (e.g., 'Doorbell Camera', '4K Bullet Camera with Motorized Zoom', 'Floodlight Cam')."
             },
             coordinates: {
                 type: Type.OBJECT,
@@ -178,6 +183,24 @@ Your analysis must be comprehensive. Your response must be a JSON object.
                   }
                 }
               }
+          }
+        }
+      },
+      cameraSummary: {
+        type: Type.ARRAY,
+        description: "A summary list of the total quantity required for each camera type.",
+        items: {
+          type: Type.OBJECT,
+          required: ["cameraType", "quantity"],
+          properties: {
+            cameraType: {
+              type: Type.STRING,
+              description: "The type of camera."
+            },
+            quantity: {
+              type: Type.NUMBER,
+              description: "The total number of this camera type needed."
+            }
           }
         }
       }

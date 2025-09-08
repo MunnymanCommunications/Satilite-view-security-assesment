@@ -9,9 +9,15 @@ export interface CameraPlacement {
   };
 }
 
+export interface CameraSummaryItem {
+  cameraType: string;
+  quantity: number;
+}
+
 export interface SecurityAnalysis {
   overview: string;
   placements: CameraPlacement[];
+  cameraSummary: CameraSummaryItem[];
 }
 
 export enum AnalysisStep {
