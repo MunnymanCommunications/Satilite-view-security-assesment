@@ -115,31 +115,23 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   const textPart = {
-    text: `You are an expert security risk assessor specializing in physical security and CCTV system design. Your task is to perform a detailed security analysis of the property shown in the center of the provided satellite image, located at "${address}". Assume North is at the top of the image. The building structure in the center of the image is the primary focus of the evaluation.
+    text: `You are an expert security assessor. Analyze the satellite image for the property at "${address}". Your goal is to design a CCTV layout with ZERO blind spots. Focus on the building in the center. Your response must be a single, valid JSON object that follows the schema.
 
-Your analysis must be comprehensive and thorough, with the primary objective of creating a camera layout that **eliminates all potential blind spots**. Your response must be a valid JSON object.
+Instructions:
 
-**Core Directives:**
+1.  **Security Overview:** Write a detailed assessment. Analyze the perimeter, access points, building vulnerabilities, and environmental risks (landscaping, architectural blind spots).
 
-1.  **Detailed Security Overview:**
-    *   Focus your assessment exclusively on the central property.
-    *   Evaluate perimeter security (fences, gates), access routes (driveways, paths), building vulnerabilities (ground-floor windows, secluded doors), and environmental factors (landscaping, blind spots from architecture). Scrutinize every corner.
+2.  **Camera Placements:**
+    *   **Coverage:** Use as many cameras as needed for 100% coverage. Overlap fields of view at critical points.
+    *   **Mounting Rule:** ALL cameras MUST be mounted on existing infrastructure (e.g., building walls, eaves, roofs, existing poles). DO NOT place cameras in open areas like lawns or parking lots.
+    *   **For each camera, provide:**
+        *   \`location\`: Use cardinal directions (e.g., "Northwest corner of the building").
+        *   \`reason\`: Explain the specific threat it mitigates.
+        *   \`cameraType\`: Suggest a specific model (e.g., "4K Bullet Camera", "PTZ Dome Camera").
+        *   \`coordinates\`: Provide precise {x, y} percentage coordinates for the image marker.
 
-2.  **Camera Placement Principles & Recommendations:**
-    *   **Goal: No Blind Spots.** Propose as many cameras as necessary to achieve complete coverage of the property's exterior, access points, and vulnerable areas. Prioritize overlapping fields of view at critical points.
-    *   **Best Practices for Mounting:** Adhere strictly to professional installation standards. All cameras MUST be placed on existing infrastructure.
-        *   **Valid Locations:** Building walls (especially corners for wide views), rooftops, eaves, porch ceilings, existing poles (light poles, utility poles on the property), or other permanent structures.
-        *   **Invalid Locations:** DO NOT place cameras floating in the middle of open areas like lawns, fields, or parking lots unless there is a clear structure to mount it on.
-    *   For each recommended placement, provide:
-        *   A clear location description using cardinal directions (e.g., 'Southeast corner of the main building, under the eave').
-        *   A justification explaining the specific vulnerability it covers.
-        *   A suggested, specific camera type (e.g., '4K Bullet Camera with Motorized Zoom', 'PTZ Dome Camera', 'License Plate Reader (LPR) Camera', 'Floodlight Camera').
-        *   Precise (x, y) percentage coordinates for placing a marker on the image.
-
-3.  **Camera Summary List:**
-    *   After the placements, provide a summary list that totals the number of each type of camera required for the installation. This list should be a simple breakdown of the camera models and their quantities.
-
-Your final JSON output must conform to the provided schema.`
+3.  **Equipment Summary:** Create a \`cameraSummary\` list that totals the quantity of each camera type required.
+`
   };
 
   const schema = {
