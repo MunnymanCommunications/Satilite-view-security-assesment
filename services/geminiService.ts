@@ -29,9 +29,11 @@ async function urlToBase64(url: string): Promise<string> {
  * Fetches a real satellite aerial view for a given address using Google Maps API.
  * @param address The property address string.
  * @param zoom The zoom level for the map (e.g., 17-21).
+ * @param width The width of the desired image in pixels.
+ * @param height The height of the desired image in pixels.
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
-export const getAerialViewFromAddress = async (address: string, zoom: number): Promise<string> => {
+export const getAerialViewFromAddress = async (address: string, zoom: number, width: number, height: number): Promise<string> => {
   const mapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
   if (!mapsApiKey) {
     throw new Error("Google Maps API Key is not configured. Please ensure VITE_MAPS_API_KEY is set in your environment variables.");
@@ -79,7 +81,9 @@ export const getAerialViewFromAddress = async (address: string, zoom: number): P
   const { lat, lng } = geocodeData.results[0].geometry.location;
 
   // Step 2: Fetch the static satellite map image for the coordinates.
-  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=800x600&maptype=satellite&key=${mapsApiKey}`;
+  // The dimensions are now passed in dynamically to match the user's viewport exactly.
+  // This prevents image cropping/scaling and ensures coordinate accuracy.
+  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&maptype=satellite&key=${mapsApiKey}`;
 
   // Step 3: Convert the fetched image to a base64 data URL to display in the app.
   try {
@@ -130,7 +134,7 @@ Your analysis must be comprehensive. Your response must be a JSON object.
     *   For each location, provide a clear description (e.g., 'Northeast corner of the house', 'Above the garage door'). Use cardinal directions (North, South, East, West).
     *   Justify each placement by explaining the specific vulnerability it addresses and the coverage it provides.
     *   Suggest an appropriate camera type (e.g., 'Wide-Angle Dome Camera with Night Vision', 'Floodlight Camera', 'Doorbell Camera').
-    *   Provide precise (x, y) coordinates on the image for each camera marker, as percentages from the top-left corner (0-100).`
+    *   Provide precise (x, y) coordinates for each camera marker. These coordinates must be percentages from the top-left corner (e.g., {"x": 55.5, "y": 42.0}). Be as accurate as possible, as these will be used to place a visual marker directly on the image.`
   };
 
   const schema = {
@@ -161,7 +165,7 @@ Your analysis must be comprehensive. Your response must be a JSON object.
             },
             coordinates: {
                 type: Type.OBJECT,
-                description: "The approximate (x, y) coordinates on the image for the camera placement, as percentages.",
+                description: "The precise (x, y) coordinates on the image for the camera placement, as percentages from the top-left corner.",
                 required: ["x", "y"],
                 properties: {
                   x: {

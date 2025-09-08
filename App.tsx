@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis, MapsRequestDeniedError } from './services/geminiService';
 import { generatePdfReport } from './services/pdfGenerator';
@@ -40,7 +40,7 @@ const App: React.FC = () => {
   
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
-  const handleGetView = useCallback(async (e: React.FormEvent) => {
+  const handleGetView = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!location.trim() || isLoading) return;
 
@@ -48,16 +48,39 @@ const App: React.FC = () => {
     setAerialImage(null);
     setSecurityAnalysis(null);
     setZoomLevel(INITIAL_ZOOM);
+    // This step triggers the useEffect hook to fetch the image dynamically
     setStep(AnalysisStep.FETCHING_IMAGE);
-
-    try {
-      const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM);
-      setAerialImage(imageUrl);
-      setStep(AnalysisStep.AWAITING_ANALYSIS);
-    } catch (err) {
-      handleError(err);
-    }
   }, [location, isLoading]);
+
+  useEffect(() => {
+    const fetchImageForContainer = async () => {
+      if (step === AnalysisStep.FETCHING_IMAGE && aerialViewRef.current) {
+        
+        const container = aerialViewRef.current;
+        // The container needs a moment to be painted to have a width
+        if (container.clientWidth === 0) {
+            setTimeout(fetchImageForContainer, 50); 
+            return;
+        }
+
+        // Cap width to prevent overly large API requests
+        const width = Math.round(Math.min(container.clientWidth, 1024));
+        // Calculate height based on a 16:9 aspect ratio to match the UI
+        const height = Math.round(width * (9 / 16));
+
+        try {
+          const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM, width, height);
+          setAerialImage(imageUrl);
+          setStep(AnalysisStep.AWAITING_ANALYSIS);
+        } catch (err) {
+          handleError(err);
+        }
+      }
+    };
+
+    fetchImageForContainer();
+  }, [step, location]);
+
 
   const handleStartAnalysis = useCallback(async () => {
     if (!aerialImage || isLoading) return;
@@ -87,7 +110,7 @@ const App: React.FC = () => {
   };
 
   const handleZoomChange = useCallback(async (newZoom: number) => {
-    if (isImageLoading || !location || newZoom < MIN_ZOOM || newZoom > MAX_ZOOM) {
+    if (isImageLoading || !location || newZoom < MIN_ZOOM || newZoom > MAX_ZOOM || !aerialViewRef.current) {
       return;
     }
     // Disallow zooming once analysis is complete to prevent marker misalignment
@@ -96,7 +119,11 @@ const App: React.FC = () => {
     setIsImageLoading(true);
     setError('');
     try {
-      const imageUrl = await getAerialViewFromAddress(location, newZoom);
+      const container = aerialViewRef.current;
+      const width = Math.round(Math.min(container.clientWidth, 1024));
+      const height = Math.round(width * (9 / 16));
+      
+      const imageUrl = await getAerialViewFromAddress(location, newZoom, width, height);
       setAerialImage(imageUrl);
       setZoomLevel(newZoom);
     } catch (err) {
