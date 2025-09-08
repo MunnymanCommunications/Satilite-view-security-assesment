@@ -1,15 +1,26 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { AnalysisStep, SecurityAnalysis } from './types';
 import { getAerialViewFromAddress, getSecurityAnalysis, MapsRequestDeniedError } from './services/geminiService';
+import { generatePdfReport } from './services/pdfGenerator';
 import LocationInput from './components/LocationInput';
 import AerialView from './components/AerialView';
 import SecurityReport from './components/SecurityReport';
 import ErrorMessage from './components/ErrorMessage';
 import MapPinIcon from './components/icons/MapPinIcon';
+import ApiConfigurationMessage from './components/ApiConfigurationMessage';
+import PrinterIcon from './components/icons/PrinterIcon';
+import LoadingSpinner from './components/LoadingSpinner';
 
-// Fix: Removed API key check UI to adhere to coding guidelines.
-// The app must not prompt the user for API keys and should assume they are present in the environment.
-// The service layer is responsible for reading keys from the environment and will throw an error if they are missing.
+
+const MIN_ZOOM = 17;
+const MAX_ZOOM = 21;
+const INITIAL_ZOOM = 19;
+
+// Safely check for environment variables.
+// In a Vite/build-tool environment, these are replaced at build time.
+// If there's no build step, `import.meta.env` will be undefined.
+const ARE_KEYS_CONFIGURED = import.meta.env?.VITE_API_KEY && import.meta.env?.VITE_MAPS_API_KEY;
+
 
 const App: React.FC = () => {
   const [location, setLocation] = useState('');
@@ -18,6 +29,17 @@ const App: React.FC = () => {
   const [step, setStep] = useState<AnalysisStep>(AnalysisStep.INPUT);
   const [error, setError] = useState<string>('');
   const [hoveredPlacement, setHoveredPlacement] = useState<number | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(INITIAL_ZOOM);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const aerialViewRef = useRef<HTMLDivElement>(null);
+  
+  // If keys aren't available, show the configuration guide instead of the app.
+  // This prevents crashes and provides clear instructions to the user.
+  if (!ARE_KEYS_CONFIGURED) {
+    return <ApiConfigurationMessage />;
+  }
   
   const isLoading = step === AnalysisStep.FETCHING_IMAGE || step === AnalysisStep.ANALYZING;
 
@@ -28,10 +50,11 @@ const App: React.FC = () => {
     setError('');
     setAerialImage(null);
     setSecurityAnalysis(null);
+    setZoomLevel(INITIAL_ZOOM);
 
     try {
       setStep(AnalysisStep.FETCHING_IMAGE);
-      const imageUrl = await getAerialViewFromAddress(location);
+      const imageUrl = await getAerialViewFromAddress(location, INITIAL_ZOOM);
       setAerialImage(imageUrl);
 
       setStep(AnalysisStep.ANALYZING);
@@ -51,6 +74,40 @@ const App: React.FC = () => {
       setStep(AnalysisStep.ERROR);
     }
   }, [location, isLoading]);
+
+  const handleZoomChange = useCallback(async (newZoom: number) => {
+    if (isImageLoading || !location || newZoom < MIN_ZOOM || newZoom > MAX_ZOOM) {
+      return;
+    }
+    setIsImageLoading(true);
+    setError('');
+    try {
+      const imageUrl = await getAerialViewFromAddress(location, newZoom);
+      setAerialImage(imageUrl);
+      setZoomLevel(newZoom);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching the new map image.';
+      setError(errorMessage);
+    } finally {
+      setIsImageLoading(false);
+    }
+  }, [location, isImageLoading]);
+
+  const handleGenerateReport = async () => {
+    if (!aerialViewRef.current || !securityAnalysis || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    setError('');
+    try {
+      await generatePdfReport(aerialViewRef.current, securityAnalysis, location);
+    } catch (err) {
+       console.error("Failed to generate PDF:", err);
+       const errorMessage = err instanceof Error ? `Failed to generate PDF: ${err.message}` : 'An unknown error occurred during PDF generation.';
+       setError(errorMessage);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
   
   const handleReset = () => {
     setLocation('');
@@ -58,6 +115,7 @@ const App: React.FC = () => {
     setSecurityAnalysis(null);
     setError('');
     setStep(AnalysisStep.INPUT);
+    setZoomLevel(INITIAL_ZOOM);
   };
 
   const getLoadingMessage = (): string => {
@@ -69,6 +127,9 @@ const App: React.FC = () => {
     }
     return "";
   }
+
+  const canZoomIn = zoomLevel < MAX_ZOOM;
+  const canZoomOut = zoomLevel > MIN_ZOOM;
 
   return (
     <div className="min-h-screen bg-indigo-950 text-white flex flex-col items-center p-4 sm:p-8 font-sans relative">
@@ -120,11 +181,19 @@ const App: React.FC = () => {
                 <p className="text-gray-300 font-mono text-sm break-words"><span className="font-bold text-blue-400">Address:</span> {location}</p>
             </div>
             <AerialView 
+              ref={aerialViewRef}
               imageUrl={aerialImage}
               placements={securityAnalysis?.placements}
               hoveredPlacement={hoveredPlacement}
+              isZooming={isImageLoading}
+              onZoomIn={() => handleZoomChange(zoomLevel + 1)}
+              onZoomOut={() => handleZoomChange(zoomLevel - 1)}
+              canZoomIn={canZoomIn}
+              canZoomOut={canZoomOut}
             />
             
+            {error && <ErrorMessage message={error} />}
+
             {isLoading && (
               <div className="text-center text-indigo-300 p-4">
                 <p>{getLoadingMessage()}</p>
@@ -137,12 +206,22 @@ const App: React.FC = () => {
             />
 
             {step === AnalysisStep.COMPLETE && (
-              <button 
-                onClick={handleReset} 
-                className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg"
-              >
-                Start New Analysis
-              </button>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={handleReset} 
+                  className="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg"
+                >
+                  Start New Analysis
+                </button>
+                <button 
+                  onClick={handleGenerateReport} 
+                  disabled={isGeneratingPdf}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-wait text-white font-bold py-3 px-8 rounded-full transition-colors text-lg shadow-lg flex items-center justify-center gap-3"
+                >
+                  {isGeneratingPdf ? <LoadingSpinner /> : <PrinterIcon className="w-6 h-6"/>}
+                  <span>{isGeneratingPdf ? 'Generating...' : 'Export Report'}</span>
+                </button>
+              </div>
             )}
           </div>
         )}

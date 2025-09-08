@@ -1,10 +1,18 @@
 import React from 'react';
 import { CameraPlacement } from '../types';
+import LoadingSpinner from './LoadingSpinner';
+import ZoomInIcon from './icons/ZoomInIcon';
+import ZoomOutIcon from './icons/ZoomOutIcon';
 
 interface AerialViewProps {
   imageUrl: string | null;
   placements?: CameraPlacement[] | null;
   hoveredPlacement?: number | null;
+  isZooming: boolean;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  canZoomIn: boolean;
+  canZoomOut: boolean;
 }
 
 const MARKER_COLORS = [
@@ -16,7 +24,16 @@ const MARKER_COLORS = [
   '#f472b6', // pink-400
 ];
 
-const AerialView: React.FC<AerialViewProps> = ({ imageUrl, placements, hoveredPlacement }) => {
+const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({ 
+    imageUrl, 
+    placements, 
+    hoveredPlacement,
+    isZooming,
+    onZoomIn,
+    onZoomOut,
+    canZoomIn,
+    canZoomOut
+ }, ref) => {
   if (!imageUrl) {
     return (
       <div className="w-full aspect-video bg-indigo-900 rounded-lg animate-pulse flex items-center justify-center">
@@ -26,8 +43,13 @@ const AerialView: React.FC<AerialViewProps> = ({ imageUrl, placements, hoveredPl
   }
 
   return (
-    <div className="w-full rounded-lg overflow-hidden shadow-2xl border-4 border-indigo-800 relative">
-      <img src={imageUrl} alt="AI-generated aerial view of property" className="w-full h-full object-cover" />
+    <div ref={ref} className="w-full rounded-lg overflow-hidden shadow-2xl border-4 border-indigo-800 relative group bg-indigo-950">
+       {isZooming && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+          <LoadingSpinner className="w-12 h-12 text-white" />
+        </div>
+      )}
+      <img src={imageUrl} alt="Satellite view of property" className="w-full h-full object-cover" />
       {placements?.map((placement, index) => {
         const isHovered = hoveredPlacement === index;
         const color = MARKER_COLORS[index % MARKER_COLORS.length];
@@ -54,8 +76,27 @@ const AerialView: React.FC<AerialViewProps> = ({ imageUrl, placements, hoveredPl
           </div>
         );
       })}
+      {/* Zoom Controls */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+        <button 
+          onClick={onZoomIn} 
+          disabled={!canZoomIn || isZooming}
+          className="bg-indigo-900/80 backdrop-blur-sm hover:bg-indigo-800 text-white rounded-full p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Zoom in"
+        >
+          <ZoomInIcon className="w-6 h-6" />
+        </button>
+        <button 
+          onClick={onZoomOut} 
+          disabled={!canZoomOut || isZooming}
+          className="bg-indigo-900/80 backdrop-blur-sm hover:bg-indigo-800 text-white rounded-full p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Zoom out"
+        >
+          <ZoomOutIcon className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
-};
+});
 
 export default AerialView;

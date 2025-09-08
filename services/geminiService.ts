@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { SecurityAnalysis } from '../types';
 
@@ -29,12 +28,13 @@ async function urlToBase64(url: string): Promise<string> {
 /**
  * Fetches a real satellite aerial view for a given address using Google Maps API.
  * @param address The property address string.
+ * @param zoom The zoom level for the map (e.g., 17-21).
  * @returns A promise that resolves to a base64 data URL of the satellite image.
  */
-export const getAerialViewFromAddress = async (address: string): Promise<string> => {
+export const getAerialViewFromAddress = async (address: string, zoom: number): Promise<string> => {
   const mapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
   if (!mapsApiKey) {
-    throw new Error("Google Maps API Key is not configured. Please set the VITE_MAPS_API_KEY environment variable in your deployment settings and redeploy.");
+    throw new Error("Google Maps API Key is not configured. Please ensure VITE_MAPS_API_KEY is set in your environment variables.");
   }
   
   // Step 1: Geocode the address to get latitude and longitude.
@@ -79,7 +79,7 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
   const { lat, lng } = geocodeData.results[0].geometry.location;
 
   // Step 2: Fetch the static satellite map image for the coordinates.
-  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=20&size=800x600&maptype=satellite&key=${mapsApiKey}`;
+  const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=800x600&maptype=satellite&key=${mapsApiKey}`;
 
   // Step 3: Convert the fetched image to a base64 data URL to display in the app.
   try {
@@ -100,7 +100,7 @@ export const getAerialViewFromAddress = async (address: string): Promise<string>
 export const getSecurityAnalysis = async (address: string, imageBase64: string): Promise<SecurityAnalysis> => {
   const apiKey = import.meta.env.VITE_API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini API Key is not configured. Please set the VITE_API_KEY environment variable in your deployment settings and redeploy.");
+    throw new Error("Gemini API Key is not configured. Please ensure VITE_API_KEY is set in your environment variables.");
   }
   
   // Extract the raw base64 data from the data URL prefix.
@@ -120,6 +120,7 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
     1. Provide a brief security overview, identifying potential vulnerabilities visible in the image (e.g., easy access points, blind spots, secluded areas, unprotected windows).
     2. Recommend optimal locations for security cameras to ensure maximum coverage. For each placement, specify the location, the reason for placing a camera there, a suitable camera type, and its approximate coordinates (x, y) on the image as percentages (from 0 to 100 for both x and y, with {x:0, y:0} being the top-left corner).
     
+    Ensure the (x, y) coordinates are as precise as possible, corresponding to the location you described on the provided image.
     Present the output as a JSON object.`
   };
 
@@ -171,7 +172,6 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   try {
-    // FIX: A redundant GoogleGenAI client initialization was removed. The client is now created here, just before it is used.
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
