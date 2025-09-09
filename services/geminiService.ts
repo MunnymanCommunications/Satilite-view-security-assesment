@@ -115,30 +115,21 @@ export const getSecurityAnalysis = async (address: string, imageBase64: string):
   };
 
   const textPart = {
-    text: `You are a world-class physical security consultant. Your task is to analyze the provided satellite image for the property at "${address}" and produce a professional-grade security camera plan. Your response must be a single, valid JSON object.
+    text: `You are a world-class physical security consultant. Analyze the provided satellite image for "${address}" and create a professional security camera plan. Your response must be a single, valid JSON object.
 
-**Core Mandate:**
-Your plan must be guided by established security best practices. The non-negotiable, primary objective is to achieve **100% exterior coverage of the central property and eliminate ALL blind spots.**
+Follow these directives precisely:
 
-**JSON Output Instructions:**
+1.  **Zero Blind Spots:** Your primary goal is 100% exterior coverage. Eliminate all blind spots. Place cameras on ALL SIDES of the central building(s) and any significant detached structures to ensure a complete defensive perimeter.
 
-1.  **Comprehensive Security Overview:**
-    *   Provide an in-depth, thorough analysis. Go beyond the obvious.
-    *   Identify likely threat vectors and paths of approach for intruders.
-    *   Scrutinize every access point: doors, garage, and all windows (especially ground floor).
-    *   Evaluate environmental factors: analyze landscaping for concealment opportunities, consider the impact of potential lighting conditions, and note vulnerabilities from adjacent properties or public access.
-    *   Pinpoint architectural blind spots, recessed doorways, or any area where an individual could operate undetected.
+2.  **Professional Mounting:** Mount cameras ONLY on existing infrastructure (building walls, eaves, rooftops, fences, poles). Use rooftops for wide, unobstructed views. For large open areas (parking lots, fields), place cameras on surrounding perimeter structures, not "floating" in the middle of the open space.
 
-2.  **Strategic Camera Placements:**
-    *   **Strict Mounting Protocol:** All cameras MUST be mounted on existing, practical infrastructure (building walls, eaves, rooftops, fences, existing poles). For large open areas (fields, parking lots), place cameras on surrounding perimeter structures to provide overlapping fields of view. No cameras should "float" in open space. Rooftops should be considered for wide, unobstructed views.
-    *   **For each camera, you must provide:**
-        *   \`location\`: A clear, specific location using cardinal directions.
-        *   \`reason\`: A detailed justification. This MUST reference a specific vulnerability identified in your overview and explain the security principle being applied (e.g., "To monitor the primary approach vector to the front door," or "To cover the vulnerable, unlit southern perimeter fence line.").
-        *   \`cameraType\`: A specific camera type justified by its intended function (e.g., "4K Turret Camera with IR" for night vision in a dark area, "PTZ Camera" for active monitoring of a large lot).
-        *   \`coordinates\`: Precise {x, y} percentage coordinates for the image marker.
+3.  **In-Depth Analysis:** Provide a comprehensive security overview. Identify threat vectors, scrutinize access points (doors, windows), and evaluate environmental factors (landscaping for concealment, lighting, etc.).
 
-3.  **Required Equipment Summary:**
-    *   Create a \`cameraSummary\` that provides a simple tally of the quantity of each camera type required for the installation.
+4.  **Detailed Justification:** For each camera, provide a specific location (using cardinal directions), a detailed reason referencing a specific vulnerability from your overview, and a functional camera type (e.g., "4K Turret Camera with IR").
+
+5.  **Precise Coordinates:** Provide exact {x, y} percentage coordinates for each camera marker.
+
+6.  **Equipment Summary:** Tally the total quantity of each camera type needed in the \`cameraSummary\`.
 `
   };
 

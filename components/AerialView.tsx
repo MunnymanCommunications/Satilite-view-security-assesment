@@ -16,20 +16,12 @@ interface AerialViewProps {
 }
 
 const MARKER_COLORS = [
-  '#34d399', // emerald-400
-  '#fbbf24', // amber-400
-  '#60a5fa', // blue-400
-  '#f87171', // red-400
-  '#a78bfa', // violet-400
-  '#f472b6', // pink-400
-  '#2dd4bf', // teal-400
-  '#a3e635', // lime-400
-  '#38bdf8', // sky-400
-  '#e879f9', // fuchsia-400
-  '#fb7185', // rose-400
-  '#22d3ee', // cyan-400
-  '#fb923c', // orange-400
+  '#34d399', '#fbbf24', '#60a5fa', '#f87171', '#a78bfa', '#f472b6', 
+  '#2dd4bf', '#a3e635', '#38bdf8', '#e879f9', '#fb7185', '#22d3ee', 
+  '#fb923c', '#818cf8', '#d946ef', '#14b8a6', '#facc15', '#ef4444', 
+  '#0ea5e9', '#6d28d9', '#db2777', '#f59e0b', '#10b981'
 ];
+
 
 const AerialView = React.forwardRef<HTMLDivElement, AerialViewProps>(({ 
     imageUrl, 
